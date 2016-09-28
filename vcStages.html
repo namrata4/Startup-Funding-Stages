@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>d3 multi-line chart</title>
+	<!-- // <script src="js/d3.min.js" type="text/javascript"></script> -->
+	<!-- <link href="css/stylesheet.css" rel="stylesheet" /> -->
+	<style>
+		.line {
+			fill: none;
+			stroke-width: 2.5px;
+		}
+
+		.axis path,
+      .axis line {
+        fill: none;
+        stroke: #121401;
+        stroke-width: 2.5px;
+        shape-rendering: crispEdges;
+      }
+
+		.tick line {
+			stroke: black;
+			stroke-width: 1px;
+		}
+		
+		.legend rect {
+  fill:white;
+  stroke:black;
+  opacity:0.8;}
+
+#container {
+position: relative;
+width: 800px;
+}
+#div1, #filter{
+position: absolute;
+width: 400px;
+}
+#div1 {
+left: 0;
+}
+#filter {
+left: 400px;
+}
+	</style>
+</head>
+
+<body>
+	
+	<script src="http://d3js.org/d3.v3.min.js"></script>
+<script>var margin = { top: 20, right: 100, bottom: 40, left: 100 };
+	var height = 500 - margin.top - margin.bottom;
+	var width = 960 - margin.left - margin.right;
+
+	var data;
+	var svg = d3.select("body").append("svg")
+			.attr("width",width + margin.left + margin.right)
+			.attr("height",height + margin.top + margin.bottom)
+		    .append("g")
+			.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+	// setup scales - the domain is specified inside of the function called when we load the data
+	var xScale = d3.time.scale()
+	               .range([0, width]); //changed
+				   
+	var yScale = d3.scale.linear()
+	               .range([height, 0]);
+				   
+	var color = d3.scale.category10();
+	
+	// setup the axes
+	var xAxis = d3.svg.axis()
+	              .scale(xScale)
+				  .orient("bottom");
+				  
+				  
+	var yAxis = d3.svg.axis()
+	              .scale(yScale)
+				  .orient("left");
+				  
+	var parseDate = d3.time.format("%Y").parse;
+	
+	
+		
+		// import data and create chart
+		
+	d3.csv("data/vcStages.csv", function(error, data) {
+		if (error) return console.warn(error);
+		
+		// color domain
+			color.domain(d3.keys(data[0]).filter(function(key) { return key !== "Date"; }));
+		data.forEach(function(d){
+			
+				d.Date = parseDate(d.Date);
+				d.Seed = +d.Seed;
+				d.EarlyStage = +d.EarlyStage;
+				d.Expansion = +d.Expansion;
+				d.LaterStage = +d.LaterStage;
+			});
+		
+			
+			// create stocks array with object for each company containing all data
+			var stage = color.domain().map(function(name) {
+				return {
+					name: name,
+					values: data.map(function(d){
+						return {date: d.Date, value: +d[name]};
+						
+					})
+					
+					};
+			});
+			
+			// add domain ranges to the x and y scales
+			xScale.domain([
+				d3.min(stage, function(c) { return d3.min(c.values, function(v) { return v.date; }); }),
+				d3.max(stage, function(c) { return d3.max(c.values, function(v) { return v.date; }); })
+			]);
+			
+			yScale.domain([
+				0,
+				d3.max(stage, function(c) { return d3.max(c.values, function(v) { return v.value; }); })
+			]);
+			
+			// add the x axis
+			svg.append("g")
+				.attr("class", "x axis")
+				.attr("transform", "translate(0," + height + ")")
+				.call(xAxis)
+				.append("text")
+      .attr("x", width+40)
+      .attr("y", -6)
+      .style("text-anchor", "end")
+      .text("Year");
+	  
+
+			// add the y axis
+			svg.append("g")
+					.attr("class", "y axis")
+					.call(yAxis)
+				    .append("text")
+					.attr("transform","rotate(-90)")
+					.attr("y",-80)
+					.attr("dy",".71em")
+					.style("text-anchor","end")
+					.text("Capital Invested by Stages($M)");
+					
+				
+		
+		var allStages = svg.selectAll(".allStages")
+		                    .data(stage)
+							.enter().append("g")
+							.attr("class", "allStages");
+		
+
+			// set the line attributes
+	   var line = d3.svg.line()
+		            .x(function(d) { return xScale(d.date); })
+		            .y(function(d) { return yScale(d.value); });		
+					
+					
+    var Lines = allStages.append("path")
+                      .attr("class","line")
+                      .attr("d", function(d) { return line(d.values); })
+                      .style("stroke", function(d) { return color(d.name); });	
+    
+
+					  
+		var div = d3.select("body").append("div")	
+			.attr("class", "tooltip")				
+			.style("opacity", 0);
+					  
+	var legend = svg.selectAll('.Lines')
+    .data(stage)
+    .enter().append('g')
+    .attr('class', 'legend');
+
+legend.append("path")
+  .attr("class", "line")
+  .attr("d", function(d) { return line(d.values); })
+  .style("stroke", function(d) { return color(d.name); });
+
+legend.append('rect')
+    .attr('x', width -20)
+    .attr('y', function(d, i){ return i *  18;})
+    .attr('width', 10)
+    .attr('height', 10)
+    .style('fill', function(d) { 
+      return color(d.name);
+    });
+
+legend.append('text')
+    .attr('x', width - 8)
+    .attr('y', function(d, i){ return (i *  18) + 9;})
+    .text(function(d){ return d.name; });
+	
+	
+	d3.selectAll("[name=v]").on("change", function() {
+		
+		var temp = this.value;	
+		display = this.checked ? "inline" : "none";
+		console.log(temp)
+		
+		Lines.filter(function(d) {return temp == d.name;})	
+			.attr("display", display);
+		
+			
+		});
+
+	});	</script>
+
+</body>
+</html>

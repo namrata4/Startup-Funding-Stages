@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+body{
+    width:1700px;
+    margin:50px auto;
+}
+path {  stroke: #fff; }
+path:hover {  opacity:0.85; }
+rect:hover {  fill:blue; }
+.axis {  font: 10px sans-serif; }
+.legend tr{    border-bottom:1px solid grey; }
+.legend tr:first-child{    border-top:1px solid grey; }
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.x.axis path {  display: none; }
+.legend{
+    margin-bottom:0px;
+    display:inline-block;
+    border-collapse: collapse;
+    border-spacing: 0px;
+}
+.legend td{
+    padding:4px 5px;
+    vertical-align:bottom;
+}
+.legendSector, .legendPercentage{
+    align:right;
+    width:30px;
+}
+
+</style>
+<body>
+<font size=6>Number of Angel Investments by Sectors</font>
+<div id='AnimatedViz'>
+</div>
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script>
+/*Referred to the paper "Interactive HTML Reporting using D3" by Mr. Puliyambalath Ph.D, Nationwide Insurance, Columbus, OH*/
+function AnimatedViz(id, avData){
+    var barColor = 'steelblue';
+    function segColor(c){ return {Software:"#807dba", Healthcare:"#e08214",Hardware:"#41ab5d", Biotech:"#FFD801", Telecom:"#A52A2A", Manufacturing:"#FF7F50", FinancialProductsAndServices:"#008B8B", ITServices:"#006400", IndustrialOrEnergy:"#8FBC8F", Retail:"#2F4F4F", Media:"#FF1493"}[c]; }
+    
+    // calculate each year's total
+    avData.forEach(function(d){d.total=d.sector.Software+d.sector.Healthcare+d.sector.Hardware+d.sector.Biotech+d.sector.Telecom+d.sector.Manufacturing+d.sector.FinancialProductsAndServices+d.sector.ITServices+d.sector.IndustrialOrEnergy+d.sector.Retail+d.sector.Media;});
+    
+    
+    function hist(av){
+        var histgm={},    histgmDim = {t: 60, r: 0, b: 30, l: 0};
+        histgmDim.w = 500 - histgmDim.l - histgmDim.r, 
+        histgmDim.h = 300 - histgmDim.t - histgmDim.b;
+            
+        
+        var histgmsvg = d3.select(id).append("svg")
+            .attr("width", histgmDim.w + histgmDim.l + histgmDim.r)
+            .attr("height", histgmDim.h + histgmDim.t + histgmDim.b).append("g")
+            .attr("transform", "translate(" + histgmDim.l + "," + histgmDim.t + ")");
+        
+        
+        histgmsvg.append("text")
+    	.text("Investments by Year")
+    	.attr("transform", "translate(110,0)")
+    	.style("fill","#000099")
+    	.style("font-size","19px");
+
+        
+        var x = d3.scale.ordinal().rangeRoundBands([0, histgmDim.w], 0.1)
+                .domain(av.map(function(d) { return d[0]; }));
+
+        
+        histgmsvg.append("g").attr("class", "x axis")
+            .attr("transform", "translate(0," + histgmDim.h + ")")
+            .call(d3.svg.axis().scale(x).orient("bottom"));
+
+        
+        var y = d3.scale.linear().range([histgmDim.h, 0])
+                .domain([0, d3.max(av, function(d) { return d[1]; })]);
+
+        
+        var bars = histgmsvg.selectAll(".bar").data(av).enter()
+                .append("g").attr("class", "bar");
+        
+        
+        bars.append("rect")
+            .attr("x", function(d) { return x(d[0]); })
+            .attr("y", function(d) { return y(d[1]); })
+            .attr("width", x.rangeBand())
+            .attr("height", function(d) { return histgmDim.h - y(d[1]); })
+            .attr('fill',barColor)
+            .on("mouseover",mouseover)
+            .on("mouseout",mouseout);
+            
+        
+        bars.append("text").text(function(d){ return d3.format(",")(d[1])})
+            .attr("x", function(d) { return x(d[0])+x.rangeBand()/2; })
+            .attr("y", function(d) { return y(d[1])-5; })
+            .attr("text-anchor", "middle");
+        
+        function mouseover(d){  
+           
+            var yr = avData.filter(function(s){ return s.Date == d[0];})[0],
+                nDiv = d3.keys(yr.sector).map(function(s){ return {type:s, sector:yr.sector[s]};});
+               
+                
+            pC.update(nDiv);
+            leg.update(nDiv);
+        }
+        
+        function mouseout(d){    
+                
+            pC.update(tF);
+            leg.update(tF);
+        }
+        
+        
+        histgm.update = function(nDiv, color){
+            
+            y.domain([0, d3.max(nDiv, function(d) { return d[1]; })]);
+            
+            
+            var bars = histgmsvg.selectAll(".bar").data(nDiv);
+            
+            
+            bars.select("rect").transition().duration(500)
+                .attr("y", function(d) {return y(d[1]); })
+                .attr("height", function(d) { return histgmDim.h - y(d[1]); })
+                .attr("fill", color);
+
+           
+            bars.select("text").transition().duration(500)
+                .text(function(d){ return d3.format(",")(d[1])})
+                .attr("y", function(d) {return y(d[1])-5; });            
+        }        
+        return histgm;
+    }
+    
+        function pieChart(pD){
+        var pC ={},    pieDim ={w:350, h: 300};
+        pieDim.r = Math.min(pieDim.w, 250) / 2;
+                
+        
+        var piesvg = d3.select(id).append("svg")
+            .attr("width", pieDim.w).attr("height", pieDim.h).append("g")
+            .attr("transform", "translate("+pieDim.w/2+","+pieDim.h/2+")");
+        
+        
+        var arc = d3.svg.arc().outerRadius(pieDim.r - 10).innerRadius(0);
+
+        
+        var pie = d3.layout.pie().sort(null).value(function(d) { return d.sector; });
+
+        
+        piesvg.selectAll("path").data(pie(pD)).enter().append("path").attr("d", arc)
+            .each(function(d) { this._current = d; })
+            .style("fill", function(d) { return segColor(d.data.type); })
+            .on("mouseover",mouseover).on("mouseout",mouseout);
+        
+        piesvg.append("text")
+    	.text("Investments by Sector")
+    	.attr("transform", "translate(-70,-120)")
+    	.style("fill","#000099")
+    	.style("font-size","19px");
+
+        
+        pC.update = function(nDiv){
+            piesvg.selectAll("path").data(pie(nDiv)).transition().duration(500)
+                .attrTween("d", arcTween);
+        }        
+        
+        function mouseover(d){
+            
+            histgm.update(avData.map(function(v){ 
+                return [v.Date,v.sector[d.data.type]];}),segColor(d.data.type));
+        }
+        
+        function mouseout(d){
+            
+            histgm.update(avData.map(function(v){
+                return [v.Date,v.total];}), barColor);
+        }
+        
+        function arcTween(a) {
+            var i = d3.interpolate(this._current, a);
+            this._current = i(0);
+            return function(t) { return arc(i(t));    };
+        }    
+        return pC;
+    }
+    
+    
+    function legend(lD){
+        var leg = {};
+            
+       
+        var legend = d3.select(id).append("table").attr('class','legend')
+        .attr("transform", "translate(20,0)");
+        
+        
+        var tr = legend.append("tbody").selectAll("tr").data(lD).enter().append("tr");
+            
+        tr.append("td").append("svg").attr("width", '24').attr("height", '24').append("rect")
+            .attr("width", '24').attr("height", '24')
+			.attr("fill",function(d){ return segColor(d.type); });
+            
+                tr.append("td").text(function(d){ return d.type;});
+
+       
+        tr.append("td").attr("class",'legendSector')
+            .text(function(d){ return d3.format(",")(d.sector);});
+
+              tr.append("td").attr("class",'legendPercentage')
+            .text(function(d){ return getLegend(d,lD);});
+
+              leg.update = function(nDiv){
+                       var l = legend.select("tbody").selectAll("tr").data(nDiv);
+
+
+            l.select(".legendSector").text(function(d){ return d3.format(",")(d.sector);});
+
+
+            l.select(".legendPercentage").text(function(d){ return getLegend(d,nDiv);});        
+        }
+        
+        function getLegend(d,aD){ 
+            return d3.format("%")(d.sector/d3.sum(aD.map(function(v){ return v.sector; })));
+        }
+
+        return leg;
+    }
+    
+    
+    var tF = ['Software','Healthcare','Hardware','Biotech','Telecom','Manufacturing','FinancialProductsAndServices','ITServices','IndustrialOrEnergy','Retail','Media' ].map(function(d){ 
+        return {type:d, sector: d3.sum(avData.map(function(t){ return t.sector[d];}))}; 
+    });    
+        var sF = avData.map(function(d){return [d.Date,d.total];});
+
+    var histgm = hist(sF), 
+        pC = pieChart(tF), 
+        leg= legend(tF);  
+}
+</script>
+
+<script>
+var sectorData=[
+{Date:'2002',sector:{	Software:40, Healthcare:14, Hardware:5, Biotech:5, Telecom:5, Manufacturing:0, FinancialProductsAndServices:0, ITServices:0, IndustrialOrEnergy:0, Retail:0, Media:0 }}
+,{Date:'2003',sector:{	Software:26, Healthcare:13, Hardware:12, Biotech:11, Telecom:5, Manufacturing:12, FinancialProductsAndServices:12, ITServices:12, IndustrialOrEnergy:12, Retail:12, Media:12 }}
+,{Date:'2004',sector:{	Software:22, Healthcare:16, Hardware:10, Biotech:10, Telecom:6, Manufacturing:0, FinancialProductsAndServices:8, ITServices:8, IndustrialOrEnergy:0, Retail:7, Media:0 }}
+,{Date:'2005',sector:{	Software:18, Healthcare:20, Hardware:8, Biotech:12, Telecom:0, Manufacturing:0, FinancialProductsAndServices:0, ITServices:6, IndustrialOrEnergy:6, Retail:0, Media:6 }}
+,{Date:'2006',sector:{	Software:18, Healthcare:21, Hardware:0, Biotech:18, Telecom:0, Manufacturing:0, FinancialProductsAndServices:6, ITServices:0, IndustrialOrEnergy:6, Retail:8, Media:0 }}
+,{Date:'2007',sector:{	Software:27, Healthcare:19, Hardware:0, Biotech:12, Telecom:0, Manufacturing:0, FinancialProductsAndServices:0, ITServices:0, IndustrialOrEnergy:8, Retail:6, Media:5 }}
+,{Date:'2008',sector:{	Software:13, Healthcare:16, Hardware:0, Biotech:11, Telecom:0, Manufacturing:0, FinancialProductsAndServices:0, ITServices:0, IndustrialOrEnergy:8, Retail:7, Media:12 }}
+,{Date:'2009',sector:{	Software:19, Healthcare:17, Hardware:0, Biotech:8, Telecom:0, Manufacturing:0, FinancialProductsAndServices:5, ITServices:0, IndustrialOrEnergy:17, Retail:9, Media:0 }}
+,{Date:'2010',sector:{	Software:16, Healthcare:30, Hardware:0, Biotech:15, Telecom:0, Manufacturing:0, FinancialProductsAndServices:0, ITServices:5, IndustrialOrEnergy:8, Retail:5, Media:0 }}
+,{Date:'2011',sector:{	Software:23, Healthcare:19, Hardware:0, Biotech:13, Telecom:0, Manufacturing:0, FinancialProductsAndServices:0, ITServices:7, IndustrialOrEnergy:13, Retail:0, Media:5 }}
+,{Date:'2012',sector:{	Software:23, Healthcare:14, Hardware:0, Biotech:11, Telecom:0, Manufacturing:0, FinancialProductsAndServices:0, ITServices:0, IndustrialOrEnergy:7, Retail:12, Media:7 }}
+,{Date:'2013',sector:{	Software:23, Healthcare:14, Hardware:0, Biotech:11, Telecom:0, Manufacturing:0, FinancialProductsAndServices:7, ITServices:0, IndustrialOrEnergy:0, Retail:7, Media:16 }}
+,{Date:'2014',sector:{	Software:27, Healthcare:16, Hardware:0, Biotech:0, Telecom:0, Manufacturing:0, FinancialProductsAndServices:8, ITServices:10, IndustrialOrEnergy:5, Retail:9, Media:0 }}
+];
+
+AnimatedViz('#AnimatedViz',sectorData);
+</script>
+<div style="font-size:20px"><i><p>->Hover over a bar in the histogram to view sector-specific data for that year in the pie-chart</p>
+<p>
+->Hover over a sector in the pie-chart to see sector-specific data for different years in the histogram</p></i></div>

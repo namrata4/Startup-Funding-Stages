@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+
+
+<html>
+  <head>
+    <title>Angel Investments</title>
+    <script type="text/javascript" src="http://d3js.org/d3.v2.min.js"></script>
+<style type="text/css">
+
+body {
+  font: 11px arial;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.x.axis path {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.line {
+  fill: none;
+  stroke-width: 3px;
+}
+
+.measurevalue {opacity: 1;}
+
+</style>
+</head>
+<body>
+<b><font size="6"> Angel Investments</font></b>
+    <p id="menu"><br><font size="3">Select an option: </font><select>
+    <option value="TotalInvestments">Total Investments ($B)</option>
+    <option value="TotalVenturesReceivingFunds">Total Ventures Receiving Funds</option>
+    <option value="ActiveInvestors">Active Investors</option>
+     </select>
+
+  <script type="text/javascript">
+
+    var margin = {top: 20, right: 10, bottom: 20, left: 110},
+        w = 960 - margin.left - margin.right,
+        h = 500 - margin.top - margin.bottom,
+        x = d3.time.scale().range([0, w]),
+        y = d3.scale.linear().range([h, 0]);
+        parseDate = d3.time.format("%Y").parse;
+
+    var measurevalues;    
+    var color = d3.scale.category10(); 
+    
+    var line = d3.svg.line()
+       .interpolate("basis")
+       .x(function(d) { return x(d.Year); })
+       .y(function(d) { return y(d.trend); });
+    
+      
+    var svg = d3.select("body").append("svg")
+        .attr("height", h + margin.top + margin.bottom)
+        .attr("width", w + margin.left + margin.right)
+        .append("g")
+        .attr("transform", "translate(" + margin.left + "," +                   margin.top + ")");
+
+    var xAxis = d3.svg.axis()
+        .scale(x)
+        .orient("bottom")
+        .ticks(14)
+       svg.append("svg:g")
+        .attr("class", "x axis");
+    var yAxis = d3.svg.axis()
+        .scale(y)
+        .orient("left")
+        .ticks(10)
+        svg.append("svg:g")
+        .attr("class", "y axis");
+    
+    var menu = d3.select("#menu select")
+    .on("change", change_menu);    
+			    
+  d3.csv("data/AngelTotals.csv", function(angeltotals) {
+		measurevalues = angeltotals;
+        drawviz();
+    });
+
+d3.select(window)
+    .on("keydown", function() { altKey = d3.event.altKey; })
+    .on("keyup", function() { altKey = false; });
+
+var altKey;
+
+function change_menu() {
+  clearTimeout(timeout);
+
+  d3.transition()
+      .duration(altKey ? 1500 : 500)
+      .each(drawviz);
+}
+
+
+function drawviz() {
+    
+var ArrayNested = d3.nest()
+		.key(function(d) { return d.InvestmentMeasure; })
+		.map(measurevalues)
+    
+    
+    var dropdown_series = menu.property("value");
+    
+    var data = ArrayNested[dropdown_series];
+    
+    
+    var filteredkey = d3.keys(data[0]).filter(function(key) { 
+     	    return (key !== "InvestmentMeasure" && key !== "Year");
+     	});
+    
+    
+    var transpose = filteredkey.map(function(name) {
+            return {
+              name: name,
+              values: data.map(function(d) {
+                return {Year: parseDate(d.Year), trend: +d[name]};
+              })
+            };
+        });
+
+    x.domain([
+    d3.min(transpose, function(c) { return d3.min(c.values, function(f) { return f.Year; }); }),
+    d3.max(transpose, function(c) { return d3.max(c.values, function(f) { return f.Year; }); })
+  ]);
+
+    y.domain([
+    d3.min(transpose, function(c) { return d3.min(c.values, function(f) { return f.trend; }); }),
+    d3.max(transpose, function(c) { return d3.max(c.values, function(f) { return f.trend; }); })
+  ]);    
+      var measurevalue = svg.selectAll(".measurevalue")
+      .data(transpose);
+     
+    
+    var measurevalueEnter = measurevalue.enter().append("g")
+      .attr("class", "measurevalue")
+      .attr("id", function(d) { return d.name; });
+    
+     measurevalueEnter.append("path")
+      .attr("class", "line")
+      .attr("d", function(d) { return line(d.values); })
+      .style("stroke", function(d) { return color(d.name); });
+
+
+
+    var measurevalueUpdate = d3.transition(measurevalue);
+    
+    
+    measurevalueUpdate.select("path")
+      .attr("d", function(d) { return line(d.values); });
+    
+        measurevalueUpdate.select("text")
+       .attr("transform", function(d) { return "translate(" + x(d.values[d.values.length - 1].Year) + "," + y(d.values[d.values.length - 1].trend) + ")"; });
+  
+  
+      d3.transition(svg).select(".y.axis")
+          .call(yAxis);   
+          
+      d3.transition(svg).select(".x.axis")
+            .attr("transform", "translate(0," + h + ")")
+          .call(xAxis);
+      
+      var curtain = svg.append('rect')
+	    .attr('x', -1 * (w+60))
+	    .attr('y', -1 * h)
+	    .attr('height', h+10)
+	    .attr('width', w)
+	    .attr('class', 'curtain')
+	    .attr('transform', 'rotate(180)')
+	    .style('fill', '#ffffff')
+	    .transition()
+  .duration(3000)
+  .ease('linear')
+  .attr('width', 0);
+}
+
+var timeout = setTimeout(function() {
+  menu.property("value", "TotalInvestments").node().focus();
+  //change();
+}, 30000);
+
+	</script>
+  </body>
+</html>

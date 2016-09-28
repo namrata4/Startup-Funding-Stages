@@ -1,0 +1,189 @@
+@CHARSET "ISO-8859-1";
+
+#introtext
+{
+font-family: Helvetica Neue;
+    font-size: 19px;
+    line-height: 1.42857143;
+    color: #333;
+}
+.article-title
+{
+    font-family: serif;
+    font-weight:bold;
+    font-size: 52px;
+    color: #262626;
+    max-width: 800px;
+    text-align: center;
+    margin: 0 auto;
+    padding: 0 10px 0 10px;
+    }
+.author
+{
+        font-size: 13px;
+        font-weight:bold;
+        color:#000;
+        width:395px;
+         text-align: center;
+          margin: 0 auto;
+    padding: 0 10px 0 10px;
+         
+      }
+ #viewport{
+/* width: 60%;
+    height: 30%;
+    position: relative; */
+    background: url('../img/chart.png') no-repeat;
+ 
+ }
+ #idea{
+     height: 200px;
+    width: 150px;
+    position: relative;
+    top: 186px;
+    left:8%
+ }
+ 
+ @keyframes animatearrow {
+    from{
+        margin-top:0;
+        opacity: 1;
+       
+    }
+    to{
+        margin-top: 30px;
+        opacity: 0;
+    }
+}
+@keyframes animatelabels {
+    from{
+        opacity: 0;
+           }
+    to{
+        opacity: 1;
+    }
+}
+.label{
+	background-color:#71DE5B;
+	font-size:17px
+}
+#label1{
+
+animation-name:animatelabels;
+	animation-duration:2s;
+	animation-iteration-count: 1;
+	animation-fill-mode: forwards;
+
+}
+#label2{
+
+animation-name:animatelabels;
+	animation-duration:2s;
+	animation-iteration-count: 1;
+	 animation-delay: 0.5s;
+	 animation-fill-mode: forwards;
+
+}
+#label3{
+
+animation-name:animatelabels;
+	animation-duration:2s;
+	animation-iteration-count: 1;
+	 animation-delay: 1s;
+	 animation-fill-mode: forwards;
+
+}
+#label4{
+
+animation-name:animatelabels;
+	animation-duration:2s;
+	animation-iteration-count: 1;
+	 animation-delay: 1.5s;
+	 animation-fill-mode: forwards;
+
+}
+#success{
+	animation-name:animatelabels;
+	animation-duration:2s;
+	animation-iteration-count: 1;
+	 animation-delay: 2s;
+	 animation-fill-mode: forwards;
+}
+#scroll {
+	animation-name:animatearrow;
+	animation-duration:2s;
+	animation-iteration-count: infinite;
+	font-size:30px
+}
+.bar {
+  fill: steelblue;
+}
+
+.step {
+ position:relative;
+ top:50px;
+  margin-bottom: 200px;
+  left:5%;
+  font-family: Helvetica Neue;
+    font-size: 19px;
+    line-height: 1.42857143;
+    color: #333;
+}
+
+.xaxis line, .xaxis text {
+	font-weight: bold;
+	font-size: small;
+}
+
+.xaxis path {
+	fill: none;
+	stroke: #000;
+	shape-rendering: crispEdges;
+}
+
+.yaxis line, .yaxis text {
+	font-weight: bold;
+	font-size: small;
+}
+
+.yaxis path {
+	fill: none;
+	stroke: #000;
+	shape-rendering: crispEdges;
+}
+
+.line{
+stroke:green;
+fill:none;
+stroke-width:3px;
+clip-path: url(#clip);
+}
+
+.brush .extent {
+  stroke: #fff;
+  fill-opacity: .125;
+  shape-rendering: crispEdges;
+}
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+div.tooltip {	
+    position: absolute;			
+    text-align: center;			
+    width: 60px;					
+    height: 28px;					
+    padding: 2px;				
+    font: 12px sans-serif;		
+    background: lightsteelblue;	
+    border: 0px;		
+    border-radius: 8px;			
+    pointer-events: none;			
+}
+
+rect :hover {
+  fill: brown;
+}

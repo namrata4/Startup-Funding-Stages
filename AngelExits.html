@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+  <head>
+    <meta charset="utf-8">
+  <link rel="stylesheet"
+	href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+    <style>
+      body {
+        font: 12px sans-serif;
+        color: #121401;
+      }
+      .axis path,
+      .axis line {
+        fill: none;
+        stroke: #121401;
+        stroke-width: 2.5px;
+        shape-rendering: crispEdges;
+      }
+    </style>
+  </head>
+  <body>
+    <h2 style="padding-left:60px;">Investor Exits and Returns</h2>
+  <script src="http://d3js.org/d3.v3.min.js"></script>
+	<script src="http://code.jquery.com/jquery-1.10.2.js"></script>
+<script
+		src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+    <script>
+      var margin = {top: 20, right: 60, bottom: 30, left: 40},
+          width  = 960 - margin.left - margin.right,
+          height = 500  - margin.top  - margin.bottom;
+      var x = d3.scale.ordinal()
+          .rangeRoundBands([0, width], .1);
+      var y = d3.scale.linear()
+          .rangeRound([height, 0]);
+      var xAxis = d3.svg.axis()
+          .scale(x)
+          .orient("bottom");
+      var yAxis = d3.svg.axis()
+          .scale(y)
+          .orient("left");
+      var line = d3.svg.line()
+          .interpolate("cardinal")
+          .x(function (d) { return x(d.title1) + x.rangeBand() / 2; })
+          .y(function (d) { return y(d.value); });
+      var color = d3.scale.ordinal()
+          .range(["#66cdaa","#2B0F0F","#ad79ba"]);
+      var svg = d3.select("body").append("svg")
+          .attr("width",  width  + margin.left + margin.right)
+          .attr("height", height + margin.top  + margin.bottom)
+        .append("g")
+          .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+      d3.csv("data/AngelExits.csv", function (error, data) {
+        var titlevar = 'Year';
+        var varkey = d3.keys(data[0]).filter(function (key) { return key !== titlevar;});
+        color.domain(varkey);
+        var lineData = varkey.map(function (name) {
+          return {
+            name: name,
+            values: data.map(function (d) {
+              return {name: name, title1: d[titlevar], value: +d[name]};
+            })
+          };
+        });
+        x.domain(data.map(function (d) { return d.Year; }));
+        y.domain([
+          d3.min(lineData, function (c) { 
+            return d3.min(c.values, function (d) { return d.value; });
+          }),
+          d3.max(lineData, function (c) { 
+            return d3.max(c.values, function (d) { return d.value; });
+          })
+        ]);
+        svg.append("g")
+            .attr("class", "x axis")
+            .attr("transform", "translate(0," + height + ")")
+            .call(xAxis);
+        svg.append("g")
+            .attr("class", "y axis")
+            .call(yAxis)
+          .append("text")
+            .attr("transform", "rotate(-90)")
+            .attr("y", 6)
+            .attr("dy", ".75em")
+            .style("text-anchor", "end")
+            .text("[In Percentage]");
+        var lineseries = svg.selectAll(".lineseries")
+            .data(lineData)
+          .enter().append("g")
+            .attr("class", "lineseries");
+      var path=  lineseries.append("path")
+          .attr("class", "line")
+          .attr("d", function (d) { return line(d.values); })
+          .style("stroke", function (d) { return color(d.name); })
+          .style("stroke-width", "4px")
+          .style("fill", "none");
+        var totalLength = path.node().getTotalLength();
+    	
+    	path
+    	.attr("stroke-dasharray", totalLength + " " + totalLength)
+    	 .attr("stroke-dashoffset", totalLength)
+    	.transition()
+       .duration(2500)
+       .ease("linear")
+       .attr("stroke-dashoffset", 0);
+          
+          
+          
+        lineseries.selectAll(".point")
+          .data(function (d) { return d.values; })
+          .enter().append("circle")
+           .attr("class", "point")
+           .attr("cx", function (d) { return x(d.title1) + x.rangeBand()/2; })
+           .attr("cy", function (d) { return y(d.value); })
+           .attr("r", "3.5px")
+           .style("fill", function (d) { return color(d.name); })
+           .style("stroke", "grey")
+           .style("stroke-width", "2.5px")
+           .on("mouseover", function (d) { showPopover.call(this, d); })
+           .on("mouseout",  function (d) { removePopovers(); })
+        var legend = svg.selectAll(".legend")
+            .data(varkey.slice().reverse())
+          .enter().append("g")
+            .attr("class", "legend")
+            .attr("transform", function (d, i) { return "translate(55," + i * 20 + ")"; });
+        legend.append("rect")
+            .attr("x", width - 10)
+            .attr("width", 10)
+            .attr("height", 10)
+            .style("fill", color)
+            .style("stroke", "grey");
+        legend.append("text")
+            .attr("x", width - 12)
+            .attr("y", 6)
+            .attr("dy", ".36em")
+            .style("text-anchor", "end")
+            .text(function (d) { return d; });
+        function removePopovers () {
+          $('.popover').each(function() {
+            $(this).remove();
+          }); 
+        }
+        function showPopover (d) {
+          $(this).popover({
+            title: d.name,
+            placement: 'auto top',
+            container: 'body',
+            trigger: 'manual',
+            html : true,
+            content: function() { 
+              return "Year: " + d.title1 + 
+                     "<br/>Measure Value: " + d3.format(",")(d.value ? d.value: d.y1 - d.y0); }
+          });
+          $(this).popover('show')
+        }
+      });
+    </script>
+      <div style="font-size:17px"><i>->Hover over the points on the line graph to view the specific values where significant changes have occurred.</i></div>
+  </body>
+</html>
